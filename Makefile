@@ -1,7 +1,9 @@
-.PHONY: bench verify
+.PHONY: all bench verify
+
+all: test bench
 
 bench: 
 	go test ./... -bench=./.. -benchmem
 
-verify:
-	go test ./... -bench=./.. -benchmem -trackGoroCount
+test:
+	go test -count=1 ./...

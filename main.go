@@ -1,17 +1,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	threadPool "threadpool_example/threadpool/good"
 )
 
 func main() {
-	threadPool := threadPool.NewThreadPool(10, func(a int) int {
+	ctx, cancel := context.WithCancel(context.Background())
+	threadPool := threadPool.NewThreadPool(ctx, 10, func(a int) int {
 		return 2 * a
 	})
 
 	go func() {
-		defer threadPool.Finalize()
+		defer cancel()
 		for i := range 10 {
 			threadPool.Incoming() <- i
 		}
