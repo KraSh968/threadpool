@@ -8,8 +8,8 @@ import (
 	"testing"
 	"threadpool_example/pkg/data"
 	completedthreadpool "threadpool_example/pkg/tasks/tosolve/completed_threadpool"
-	"threadpool_example/pkg/tasks/tosolve/completed_threadpool/solution"
-	stup "threadpool_example/pkg/tasks/tosolve/completed_threadpool/stub"
+	"threadpool_example/pkg/tasks/tosolve/completed_threadpool/correct"
+	"threadpool_example/pkg/tasks/tosolve/completed_threadpool/stub"
 )
 
 type PoolConstructor[T any, E any] func(context.Context, int, completedthreadpool.ApplierFunc[T, E]) completedthreadpool.ThreadPool[T, E]
@@ -23,11 +23,11 @@ var (
 )
 
 func stubImplementation[T, E any](ctx context.Context, size int, applier completedthreadpool.ApplierFunc[T, E]) completedthreadpool.ThreadPool[T, E] {
-	return stup.NewThreadPool[T, E](ctx, size, applier)
+	return stub.NewThreadPool(ctx, size, applier)
 }
 
 func solutionImplementation[T, E any](ctx context.Context, size int, applier completedthreadpool.ApplierFunc[T, E]) completedthreadpool.ThreadPool[T, E] {
-	return solution.NewThreadPool[T, E](ctx, size, applier)
+	return correct.NewThreadPool(ctx, size, applier)
 }
 
 type ErrTooManyGorotinesInUse struct {
