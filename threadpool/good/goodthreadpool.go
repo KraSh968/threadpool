@@ -42,16 +42,8 @@ func (p *GoodThreadPool[T, E]) Outgoing() <-chan E {
 
 func (p *GoodThreadPool[T, E]) worker() {
 	defer p.wg.Done()
-	for {
-		select {
-		case <-p.ctx.Done():
-			return
-		case value, ok := <-p.in:
-			if !ok {
-				return
-			}
-			p.out <- p.applier(value)
-		}
+	for value := range p.in {
+		p.out <- p.applier(value)
 	}
 }
 

@@ -15,7 +15,6 @@ type variant struct {
 func BenchmarkBadThreadPool(b *testing.B) {
 
 	b.ReportAllocs()
-	runtime.GC()
 
 	var variants []variant = []variant{{
 		queueSize: 2,
