@@ -1,4 +1,4 @@
-package threadpool
+package completedthreadpool
 
 type ApplierFunc[T any, E any] func(T) E
 
