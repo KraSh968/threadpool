@@ -1,4 +1,4 @@
-package stup
+package stub
 
 import (
 	"context"
