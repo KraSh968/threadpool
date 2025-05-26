@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 	"threadpool_example/pkg/data"
+	"threadpool_example/pkg/tasks"
 	completedthreadpool "threadpool_example/pkg/tasks/tosolve/completed_threadpool"
 	"threadpool_example/pkg/tasks/tosolve/completed_threadpool/correct"
 	"threadpool_example/pkg/tasks/tosolve/completed_threadpool/stub"
@@ -30,14 +31,6 @@ func solutionImplementation[T, E any](ctx context.Context, size int, applier com
 	return correct.NewThreadPool(ctx, size, applier)
 }
 
-type ErrTooManyGorotinesInUse struct {
-	current int
-	allowed int
-}
-
-func (e ErrTooManyGorotinesInUse) Error() string {
-	return fmt.Sprintf("using %d gorotines, but allowed only %d", e.current, e.allowed)
-}
 func LoadThreadPool(createFunc PoolConstructor[int, int], size int, topValue int) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	pool := createFunc(ctx, size, multApplier)
@@ -50,7 +43,7 @@ func LoadThreadPool(createFunc PoolConstructor[int, int], size int, topValue int
 
 			currentGoroCount := runtime.NumGoroutine()
 			if runtime.NumGoroutine() > allowedGoroCount {
-				errChan <- ErrTooManyGorotinesInUse{current: currentGoroCount, allowed: allowedGoroCount}
+				errChan <- tasks.ErrTooManyGorotinesInUse{Current: currentGoroCount, Allowed: allowedGoroCount}
 				return
 			}
 		}
@@ -79,24 +72,12 @@ func TestGoroutinesUsageInThreadPool(t *testing.T) {
 	}
 }
 
-type ErrGoroutinesStillAliveAfterShutdown struct {
-	alive int
-}
-
-func (e ErrGoroutinesStillAliveAfterShutdown) Error() string {
-	return fmt.Sprintf("%d goroutines still active after shutdown, too slow resources releasing or potential memory leak", e.alive)
-}
 func LoadAndShutDownThreadPool(createFunc PoolConstructor[int, int], size int, topValue int) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	pool := createFunc(ctx, size, multApplier)
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				errChan <- fmt.Errorf("panic while processing test: %s", err)
-			}
-		}()
 		beforeStart := runtime.NumGoroutine()
 		for i := 0; i < topValue; i++ {
 			pool.Incoming() <- i
@@ -105,7 +86,7 @@ func LoadAndShutDownThreadPool(createFunc PoolConstructor[int, int], size int, t
 				cancel()
 				currentAmount := runtime.NumGoroutine()
 				if currentAmount > beforeStart {
-					errChan <- ErrGoroutinesStillAliveAfterShutdown{alive: currentAmount - beforeStart}
+					errChan <- tasks.ErrGoroutinesStillAliveAfterShutdown{Alive: currentAmount - beforeStart}
 				}
 				return
 			}
@@ -155,10 +136,11 @@ func LoadAndVerifyValues(createFunc PoolConstructor[int, int], size int, topValu
 	}
 
 	slices.Sort(results)
+	slices.Sort(inputData)
 
 	for i, item := range results {
 		expected := multApplier(inputData[i])
-		if item != multApplier(inputData[i]) {
+		if item != expected {
 			return fmt.Errorf("expected %d, got %d", expected, item)
 		}
 	}
@@ -166,11 +148,11 @@ func LoadAndVerifyValues(createFunc PoolConstructor[int, int], size int, topValu
 }
 
 func TestThreadPoolValuesCorrect(t *testing.T) {
-	if err := LoadAndShutDownThreadPool(stubImplementation, 4, 1000); err != nil {
+	if err := LoadAndVerifyValues(stubImplementation, 4, 1000); err != nil {
 		t.Errorf("error while testing stub implementation: %s", err.Error())
 	}
 
-	if err := LoadAndShutDownThreadPool(solutionImplementation, 4, 1000); err != nil {
+	if err := LoadAndVerifyValues(solutionImplementation, 4, 1000); err != nil {
 		t.Errorf("error while testing solution implementation: %s", err.Error())
 	}
 }
