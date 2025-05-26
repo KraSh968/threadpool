@@ -30,3 +30,20 @@ go run cmd/main/entry.go -example [имя]
 ```go
 go run cmd/main/entry.go -example all
 ```
+
+## Запуск тестов
+
+Все тесты
+```go
+go test -count=1 ./...`
+```
+
+Все тесты со всеми бенчмарками
+```go
+go test ./... -count=1 -bench=./... -benchmem`
+```
+
+Тесты конкретного пакета (в примере `completed_threadpool`)
+```go
+go test -count=1 threadpool_example/pkg/tasks/tosolve/completed_threadpool`
+```
